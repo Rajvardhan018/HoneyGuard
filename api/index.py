@@ -1,8 +1,9 @@
 import os
 import sys
 
-# Ensure VERCEL environment flag is set
-os.environ["VERCEL"] = "1"
+# Vercel automatically sets VERCEL="1" in production; keep local development default
+if "NOW_REGION" in os.environ:
+    os.environ["VERCEL"] = "1"
 
 # Resolve absolute path to project root and backend
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))

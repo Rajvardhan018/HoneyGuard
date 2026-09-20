@@ -58,8 +58,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount REST API
+# Mount REST API (both /api/v1 and fallback /v1 in case proxy rewrites strip /api)
 app.include_router(api_router, prefix=settings.API_V1_STR)
+app.include_router(api_router, prefix="/v1")
+
+@app.get("/api")
+@app.get("/api/")
+@app.get("/api/health")
+async def api_root():
+    return {
+        "platform": "HoneyGuard Cyber Intelligence Platform API",
+        "tagline": "Detect. Deceive. Analyze. Respond.",
+        "version": settings.PROJECT_VERSION,
+        "mode": settings.SYSTEM_MODE,
+        "status": "online",
+        "api_docs": "/docs",
+        "health": f"{settings.API_V1_STR}/dashboard/health"
+    }
 
 # Real-time WebSocket Endpoint
 @app.websocket("/ws/stream")
@@ -86,7 +101,7 @@ if os.path.exists(frontend_dist):
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
         # Don't hijack API or WS routes
-        if full_path.startswith("api/") or full_path.startswith("ws"):
+        if full_path.startswith("api") or full_path.startswith("ws") or full_path.startswith("v1"):
             return JSONResponse(status_code=404, content={"detail": "Not found"})
         
         file_path = os.path.join(frontend_dist, full_path)

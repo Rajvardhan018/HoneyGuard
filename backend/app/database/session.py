@@ -15,9 +15,12 @@ if db_url.startswith("postgres://"):
 elif db_url.startswith("postgresql://") and not db_url.startswith("postgresql+asyncpg://"):
     db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
-# 2. Redirect SQLite to /tmp if running on Vercel without a remote PostgreSQL database
+import tempfile
+
+# 2. Redirect SQLite to writable temp directory if running on Vercel without a remote PostgreSQL database
 if is_vercel and db_url.startswith("sqlite"):
-    db_url = "sqlite+aiosqlite:////tmp/honeyguard.db"
+    temp_dir = tempfile.gettempdir().replace("\\", "/")
+    db_url = f"sqlite+aiosqlite:///{temp_dir}/honeyguard.db"
 
 connect_args = {}
 if db_url.startswith("sqlite"):
