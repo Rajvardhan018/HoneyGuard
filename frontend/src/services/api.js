@@ -1,4 +1,5 @@
-const API_BASE = '/api/v1';
+const RAW_API_URL = import.meta.env.VITE_API_URL || '';
+const API_BASE = (RAW_API_URL ? RAW_API_URL.replace(/\/+$/, '') : '') + '/api/v1';
 
 async function request(endpoint, options = {}) {
   const token = localStorage.getItem('hg_token');

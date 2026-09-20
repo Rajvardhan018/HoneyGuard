@@ -79,39 +79,51 @@ async def test_dashboard_api():
 
 @pytest.mark.asyncio
 async def test_create_honeypot_api():
+    from app.database.session import AsyncSessionLocal
+    from sqlalchemy import text
+
+    async with AsyncSessionLocal() as session:
+        await session.execute(text("DELETE FROM honeypots WHERE port = 2229"))
+        await session.commit()
+
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        # 1. Test creating a LAB honeypot on an isolated port
-        payload = {
-            "name": "SSH-TEST-LAB",
-            "type": "ssh",
-            "port": 2229,
-            "description": "Academic test honeypot",
-            "deception_level": "HIGH",
-            "deployment_mode": "LAB"
-        }
-        res = await client.post("/api/v1/honeypots/", json=payload)
-        assert res.status_code == 201
-        data = res.json()
-        assert data["name"] == "SSH-TEST-LAB"
-        assert data["port"] == 2229
-        assert data["deception_level"] == "HIGH"
-        assert "SSH-LAB" in data["id"]
+        try:
+            # 1. Test creating a LAB honeypot on an isolated port
+            payload = {
+                "name": "SSH-TEST-LAB",
+                "type": "ssh",
+                "port": 2229,
+                "description": "Academic test honeypot",
+                "deception_level": "HIGH",
+                "deployment_mode": "LAB"
+            }
+            res = await client.post("/api/v1/honeypots/", json=payload)
+            assert res.status_code == 201
+            data = res.json()
+            assert data["name"] == "SSH-TEST-LAB"
+            assert data["port"] == 2229
+            assert data["deception_level"] == "HIGH"
+            assert "SSH-LAB" in data["id"]
 
-        # 2. Test port collision check
-        res_dup = await client.post("/api/v1/honeypots/", json=payload)
-        assert res_dup.status_code == 400
-        assert "already assigned" in res_dup.json()["detail"]
+            # 2. Test port collision check
+            res_dup = await client.post("/api/v1/honeypots/", json=payload)
+            assert res_dup.status_code == 400
+            assert "already assigned" in res_dup.json()["detail"]
 
-        # 3. Test LIVE mode verification failure for unbound port
-        live_payload = {
-            "name": "HTTP-UNBOUND-LIVE",
-            "type": "http",
-            "port": 59998,
-            "description": "Unbound live test",
-            "deception_level": "MEDIUM",
-            "deployment_mode": "LIVE"
-        }
-        res_live = await client.post("/api/v1/honeypots/", json=live_payload)
-        assert res_live.status_code == 400
-        assert "LIVE Mode Verification Failed" in res_live.json()["detail"]
+            # 3. Test LIVE mode verification failure for unbound port
+            live_payload = {
+                "name": "HTTP-UNBOUND-LIVE",
+                "type": "http",
+                "port": 59998,
+                "description": "Unbound live test",
+                "deception_level": "MEDIUM",
+                "deployment_mode": "LIVE"
+            }
+            res_live = await client.post("/api/v1/honeypots/", json=live_payload)
+            assert res_live.status_code == 400
+            assert "LIVE Mode Verification Failed" in res_live.json()["detail"]
+        finally:
+            async with AsyncSessionLocal() as session:
+                await session.execute(text("DELETE FROM honeypots WHERE port = 2229"))
+                await session.commit()

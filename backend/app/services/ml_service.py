@@ -82,7 +82,10 @@ class MLClassifierService:
         return vector, features_dict
 
     def _initialize_model(self):
-        os.makedirs(MODEL_DIR, exist_ok=True)
+        try:
+            os.makedirs(MODEL_DIR, exist_ok=True)
+        except OSError:
+            pass
         if os.path.exists(MODEL_PATH):
             try:
                 self.model = joblib.load(MODEL_PATH)

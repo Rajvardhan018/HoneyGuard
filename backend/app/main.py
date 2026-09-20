@@ -28,14 +28,19 @@ async def lifespan(app: FastAPI):
     async with AsyncSessionLocal() as session:
         await seed_database(session)
         
-    logger.info("Starting isolated Honeypot Sensors (SSH :2222, HTTP :8080)...")
-    await honeypot_manager.start_sensors()
-    
+    is_vercel = os.environ.get("VERCEL") == "1" or os.environ.get("NOW_REGION") is not None
+    if not is_vercel:
+        logger.info("Starting isolated Honeypot Sensors (SSH :2222, HTTP :8080)...")
+        await honeypot_manager.start_sensors()
+    else:
+        logger.info("Running in Vercel Serverless environment: raw TCP sensor binding skipped (use LAB mode or external sensors).")
+        
     logger.info("HoneyGuard Cyber Intelligence Platform is ONLINE.")
     yield
     
-    logger.info("Shutting down HoneyGuard sensors and resources...")
-    await honeypot_manager.stop_sensors()
+    if not is_vercel:
+        logger.info("Shutting down HoneyGuard sensors and resources...")
+        await honeypot_manager.stop_sensors()
 
 app = FastAPI(
     title="HoneyGuard API",

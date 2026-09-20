@@ -1,0 +1,14 @@
+.git
+.gitignore
+.pytest_cache
+tests/
+docs/
+*.db
+*.sqlite
+__pycache__/
+*.pyc
+start.bat
+start_all.ps1
+start_all.sh
+Dockerfile.backend
+docker-compose.yml
