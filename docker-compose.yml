@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: honeyguard-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: honeyguard
+      POSTGRES_PASSWORD: honeyguard_secure_password_2026
+      POSTGRES_DB: honeyguard
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U honeyguard"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: honeyguard-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://honeyguard:honeyguard_secure_password_2026@postgres:5432/honeyguard
+      ENVIRONMENT: production
+      SYSTEM_MODE: LIVE
+      HONEYPOT_SSH_PORT: 2222
+      HONEYPOT_HTTP_PORT: 8080
+    ports:
+      - "8000:8000"
+      - "2222:2222"
+      - "8080:8080"
+    volumes:
+      - ./backend/app/data:/app/backend/app/data
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: honeyguard-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
