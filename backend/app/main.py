@@ -1,6 +1,12 @@
 import os
+import sys
 import logging
 from contextlib import asynccontextmanager
+
+# Ensure project root is in sys.path for honeypots and shared modules
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -22,13 +28,21 @@ logger = logging.getLogger("honeyguard.main")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Initializing HoneyGuard Database & Schema...")
-    await init_db()
-    
-    logger.info("Checking & Seeding HoneyGuard Baseline Intelligence...")
-    async with AsyncSessionLocal() as session:
-        await seed_database(session)
+    try:
+        await init_db()
+        logger.info("Checking & Seeding HoneyGuard Baseline Intelligence...")
+        async with AsyncSessionLocal() as session:
+            await seed_database(session)
+    except Exception as db_err:
+        logger.warning(f"Database initialization warning in lifespan: {db_err}")
         
-    is_vercel = os.environ.get("VERCEL") == "1" or os.environ.get("NOW_REGION") is not None
+    is_vercel = bool(
+        os.environ.get("VERCEL") or 
+        os.environ.get("VERCEL_ENV") or 
+        os.environ.get("VERCEL_REGION") or 
+        os.environ.get("AWS_LAMBDA_FUNCTION_NAME") or 
+        os.environ.get("NOW_REGION")
+    )
     if not is_vercel:
         logger.info("Starting isolated Honeypot Sensors (SSH :2222, HTTP :8080)...")
         await honeypot_manager.start_sensors()
@@ -91,9 +105,17 @@ async def websocket_stream(websocket: WebSocket):
         logger.debug(f"WebSocket client loop exception: {e}")
         manager.disconnect(websocket)
 
-# Static Files & SPA Routing for built frontend
+# Static Files & SPA Routing for local standalone development
+is_serverless = bool(
+    os.environ.get("VERCEL") or 
+    os.environ.get("VERCEL_ENV") or 
+    os.environ.get("VERCEL_REGION") or 
+    os.environ.get("AWS_LAMBDA_FUNCTION_NAME") or 
+    os.environ.get("NOW_REGION")
+)
+
 frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist"))
-if os.path.exists(frontend_dist):
+if not is_serverless and os.path.exists(frontend_dist):
     assets_dir = os.path.join(frontend_dist, "assets")
     if os.path.exists(assets_dir):
         app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
@@ -112,7 +134,7 @@ else:
     @app.get("/")
     async def root():
         return {
-            "platform": "HoneyGuard Cyber Intelligence Platform",
+            "platform": "HoneyGuard Cyber Intelligence Platform API",
             "tagline": "Detect. Deceive. Analyze. Respond.",
             "version": settings.PROJECT_VERSION,
             "mode": settings.SYSTEM_MODE,
