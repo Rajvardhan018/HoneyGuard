@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
@@ -72,13 +72,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def log_request_middleware(request: Request, call_next):
+    logger.info(f"[HONEYGUARD HTTP] {request.method} {request.url.path}")
+    response = await call_next(request)
+    return response
+
 # Mount REST API (both /api/v1 and fallback /v1 in case proxy rewrites strip /api)
 app.include_router(api_router, prefix=settings.API_V1_STR)
 app.include_router(api_router, prefix="/v1")
 
+@app.get("/health")
+@app.get("/api/health")
 @app.get("/api")
 @app.get("/api/")
-@app.get("/api/health")
 async def api_root():
     return {
         "platform": "HoneyGuard Cyber Intelligence Platform API",

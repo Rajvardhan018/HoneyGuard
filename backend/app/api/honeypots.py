@@ -12,11 +12,13 @@ from app.services.honeypot_manager import honeypot_manager
 
 router = APIRouter(prefix="/honeypots", tags=["Honeypots"])
 
+@router.get("", response_model=List[HoneypotOut], include_in_schema=False)
 @router.get("/", response_model=List[HoneypotOut])
 async def list_honeypots(db: AsyncSession = Depends(get_db)):
     res = await db.execute(select(Honeypot).order_by(Honeypot.id))
     return res.scalars().all()
 
+@router.post("", response_model=HoneypotOut, status_code=201, include_in_schema=False)
 @router.post("/", response_model=HoneypotOut, status_code=201)
 async def create_honeypot(payload: HoneypotCreate, db: AsyncSession = Depends(get_db)):
     # 1. Check for port collision in database
