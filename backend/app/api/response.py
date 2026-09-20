@@ -10,12 +10,14 @@ from app.services.soar_service import soar_engine
 
 router = APIRouter(prefix="/response", tags=["SOAR & Automated Response"])
 
-@router.get("/playbooks", response_model=List[PlaybookOut])
+@router.get("/playbooks", response_model=List[PlaybookOut], include_in_schema=True)
+@router.get("/playbooks/", response_model=List[PlaybookOut], include_in_schema=False)
 async def list_playbooks(db: AsyncSession = Depends(get_db)):
     res = await db.execute(select(Playbook))
     return res.scalars().all()
 
-@router.get("/executions", response_model=List[PlaybookExecutionOut])
+@router.get("/executions", response_model=List[PlaybookExecutionOut], include_in_schema=True)
+@router.get("/executions/", response_model=List[PlaybookExecutionOut], include_in_schema=False)
 async def list_executions(limit: int = Query(50, ge=1, le=100), db: AsyncSession = Depends(get_db)):
     q = select(PlaybookExecution).options(selectinload(PlaybookExecution.playbook)).order_by(desc(PlaybookExecution.started_at)).limit(limit)
     res = await db.execute(q)
@@ -36,7 +38,8 @@ async def list_executions(limit: int = Query(50, ge=1, le=100), db: AsyncSession
         ))
     return out
 
-@router.get("/blocklist")
+@router.get("/blocklist", include_in_schema=True)
+@router.get("/blocklist/", include_in_schema=False)
 async def get_active_blocklist(db: AsyncSession = Depends(get_db)):
     res = await db.execute(select(BlocklistEntry).where(BlocklistEntry.active == True).order_by(desc(BlocklistEntry.created_at)))
     return res.scalars().all()

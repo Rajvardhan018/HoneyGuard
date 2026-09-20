@@ -13,6 +13,7 @@ from app.schemas.schemas import AttackEventOut, AttackDetailOut, FeatureOut, MLP
 
 router = APIRouter(prefix="/attacks", tags=["Attacks"])
 
+@router.get("", response_model=List[AttackEventOut], include_in_schema=False)
 @router.get("/", response_model=List[AttackEventOut])
 async def list_attacks(
     search: Optional[str] = None,
@@ -130,7 +131,7 @@ async def get_attack_details(event_id: str, db: AsyncSession = Depends(get_db)):
     # Associated Incident
     inc_q = select(Incident).where(Incident.source_ip == event.source_ip).order_by(desc(Incident.created_at))
     inc_res = await db.execute(inc_q)
-    associated_inc = inc_res.scalar_one_or_none()
+    associated_inc = inc_res.scalars().first()
 
     # Timeline reconstruction
     timeline = [

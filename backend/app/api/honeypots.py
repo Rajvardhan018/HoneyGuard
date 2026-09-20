@@ -1,3 +1,4 @@
+import os
 import socket
 import datetime
 from typing import List, Optional
@@ -42,56 +43,69 @@ async def create_honeypot(payload: HoneypotCreate, db: AsyncSession = Depends(ge
         new_id = f"{prefix}-{idx:02d}"
 
     # 3. Handle LIVE vs LAB mode
-    if mode == "LIVE":
-        # LIVE Mode: verify that an isolated external listener is already bound on that port
-        is_live_reachable = False
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(1.5)
-        try:
-            res_code = s.connect_ex(("127.0.0.1", payload.port))
-            if res_code == 0:
-                is_live_reachable = True
-        except Exception:
-            is_live_reachable = False
-        finally:
-            s.close()
+    is_vercel = bool(
+        os.environ.get("VERCEL") or 
+        os.environ.get("VERCEL_ENV") or 
+        os.environ.get("VERCEL_REGION") or 
+        os.environ.get("AWS_LAMBDA_FUNCTION_NAME") or 
+        os.environ.get("NOW_REGION")
+    )
 
-        if not is_live_reachable:
-            raise HTTPException(
-                status_code=400,
-                detail=f"LIVE Mode Verification Failed: No active isolated sensor listener detected on port {payload.port}. Please ensure your isolated sensor daemon is running and listening, or select LAB mode to spawn a simulated local sensor."
-            )
+    if is_vercel:
+        # On Vercel Serverless, persistent raw TCP socket listening is not supported.
+        # LAB registers a simulated sensor; LIVE registers an external/isolated sensor.
+        pass
     else:
-        # LAB Mode: verify port availability and spawn local sandboxed sensor
-        is_free = False
-        test_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            test_sock.bind(("0.0.0.0", payload.port))
-            is_free = True
-        except OSError:
+        if mode == "LIVE":
+            # LIVE Mode: verify that an isolated external listener is already bound on that port
+            is_live_reachable = False
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(1.5)
+            try:
+                res_code = s.connect_ex(("127.0.0.1", payload.port))
+                if res_code == 0:
+                    is_live_reachable = True
+            except Exception:
+                is_live_reachable = False
+            finally:
+                s.close()
+
+            if not is_live_reachable:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"LIVE Mode Verification Failed: No active isolated sensor listener detected on port {payload.port}. Please ensure your isolated sensor daemon is running and listening, or select LAB mode to spawn a simulated local sensor."
+                )
+        else:
+            # LAB Mode: verify port availability and spawn local sandboxed sensor
             is_free = False
-        finally:
-            test_sock.close()
+            test_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            try:
+                test_sock.bind(("0.0.0.0", payload.port))
+                is_free = True
+            except OSError:
+                is_free = False
+            finally:
+                test_sock.close()
 
-        if not is_free:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Port Conflict: Port {payload.port} is already in use by another local process. Please select a different port (e.g. 2223, 8081)."
-            )
+            if not is_free:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Port Conflict: Port {payload.port} is already in use by another local process. Please select a different port (e.g. 2223, 8081)."
+                )
 
-        try:
-            await honeypot_manager.spawn_sensor(
-                hp_id=new_id,
-                hp_type=hp_type,
-                port=payload.port,
-                deception_level=payload.deception_level.upper(),
-                mode="LAB"
-            )
-        except Exception as spawn_err:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to initialize local honeypot sensor on port {payload.port}: {str(spawn_err)}"
-            )
+            try:
+                await honeypot_manager.spawn_sensor(
+                    hp_id=new_id,
+                    hp_type=hp_type,
+                    port=payload.port,
+                    deception_level=payload.deception_level.upper(),
+                    mode="LAB"
+                )
+            except Exception as spawn_err:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to initialize local honeypot sensor on port {payload.port}: {str(spawn_err)}"
+                )
 
     # 4. Save to Database
     now = datetime.datetime.now(datetime.timezone.utc)

@@ -1,5 +1,13 @@
-const RAW_API_URL = import.meta.env.VITE_API_URL || '';
-const API_BASE = (RAW_API_URL ? RAW_API_URL.replace(/\/+$/, '') : '') + '/api/v1';
+const getApiBase = () => {
+  let raw = (import.meta.env.VITE_API_URL || '').trim().replace(/\/+$/, '');
+  if (!raw) {
+    return '/api/v1';
+  }
+  raw = raw.replace(/\/api\/v1$/, '').replace(/\/v1$/, '').replace(/\/api$/, '');
+  return `${raw}/api/v1`;
+};
+
+const API_BASE = getApiBase();
 
 async function request(endpoint, options = {}) {
   const token = localStorage.getItem('hg_token');

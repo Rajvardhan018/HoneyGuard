@@ -11,6 +11,7 @@ from app.websocket.manager import manager
 
 router = APIRouter(prefix="/incidents", tags=["Incidents"])
 
+@router.get("", response_model=List[IncidentOut], include_in_schema=False)
 @router.get("/", response_model=List[IncidentOut])
 async def list_incidents(
     status: Optional[str] = None,

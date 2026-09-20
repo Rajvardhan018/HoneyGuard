@@ -9,6 +9,7 @@ from app.services.threat_intel_service import threat_intel_service
 
 router = APIRouter(prefix="/threat-intelligence", tags=["Threat Intelligence"])
 
+@router.get("", response_model=List[ThreatIntelOut], include_in_schema=False)
 @router.get("/", response_model=List[ThreatIntelOut])
 async def list_threat_intel(
     search: Optional[str] = None,

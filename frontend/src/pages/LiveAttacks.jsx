@@ -74,19 +74,23 @@ export default function LiveAttacks() {
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">Real-time attack feed from isolated honeypot sensors</p>
         </div>
 
-        {/* Counter Pills matching Reference UI */}
+        {/* Counter Pills dynamically reflecting database records */}
         <div className="flex items-center space-x-3">
           <div className="px-4 py-2 rounded-xl bg-white/80 border border-slate-200/80 shadow-sm text-center">
-            <div className="text-lg font-black text-red-600">17</div>
-            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Active Now</div>
+            <div className="text-lg font-black text-red-600">
+              {attacks.filter(a => a.severity === 'CRITICAL').length}
+            </div>
+            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Critical</div>
           </div>
           <div className="px-4 py-2 rounded-xl bg-white/80 border border-slate-200/80 shadow-sm text-center">
-            <div className="text-lg font-black text-honey-indigo">127</div>
-            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Today</div>
+            <div className="text-lg font-black text-honey-indigo">{attacks.length}</div>
+            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Total Recorded</div>
           </div>
           <div className="px-4 py-2 rounded-xl bg-white/80 border border-slate-200/80 shadow-sm text-center">
-            <div className="text-lg font-black text-purple-700">2,841</div>
-            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">This Week</div>
+            <div className="text-lg font-black text-purple-700">
+              {attacks.filter(a => a.mode === 'LIVE').length}
+            </div>
+            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Live Ingress</div>
           </div>
         </div>
       </div>

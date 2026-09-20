@@ -60,7 +60,8 @@ app = FastAPI(
     title="HoneyGuard API",
     description="AI-Powered Adaptive Honeypot with Real-Time Threat Intelligence & SOAR Dashboard",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    redirect_slashes=False
 )
 
 # CORS configuration

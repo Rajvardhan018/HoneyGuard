@@ -73,10 +73,10 @@ export default function Dashboard() {
   const donutColors = ['#ef4444', '#f59e0b', '#8b5cf6', '#10b981'];
 
   const severityPieData = stats ? [
-    { name: 'Critical', value: stats.severity_distribution.critical || 14 },
-    { name: 'High', value: stats.severity_distribution.high || 32 },
-    { name: 'Medium', value: stats.severity_distribution.medium || 56 },
-    { name: 'Low', value: stats.severity_distribution.low || 25 },
+    { name: 'Critical', value: stats.severity_distribution?.critical ?? 0 },
+    { name: 'High', value: stats.severity_distribution?.high ?? 0 },
+    { name: 'Medium', value: stats.severity_distribution?.medium ?? 0 },
+    { name: 'Low', value: stats.severity_distribution?.low ?? 0 },
   ] : [];
 
   return (
@@ -122,28 +122,28 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <MetricCard
           title="Total Attacks"
-          value={stats?.total_attacks ?? 127}
+          value={stats?.total_attacks ?? 0}
           icon={Zap}
           delta="+12%"
           color="purple"
         />
         <MetricCard
           title="Critical Threats"
-          value={stats?.critical_threats ?? 14}
+          value={stats?.critical_threats ?? 0}
           icon={ShieldAlert}
           delta="+27%"
           color="red"
         />
         <MetricCard
           title="Open Incidents"
-          value={stats?.open_incidents ?? 23}
+          value={stats?.open_incidents ?? 0}
           icon={AlertTriangle}
           delta="+5%"
           color="amber"
         />
         <MetricCard
           title="Blocked IPs"
-          value={stats?.blocked_ips ?? 41}
+          value={stats?.blocked_ips ?? 0}
           icon={Lock}
           delta="+18%"
           color="green"

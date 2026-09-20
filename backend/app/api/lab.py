@@ -1,3 +1,4 @@
+import os
 import asyncio
 import random
 from typing import Dict, Any, Optional
@@ -83,11 +84,13 @@ REPLAY_DATASET = [
     }
 ]
 
-@router.get("/mode")
+@router.get("/mode", include_in_schema=True)
+@router.get("/mode/", include_in_schema=False)
 async def get_system_mode():
     return {"mode": settings.SYSTEM_MODE}
 
-@router.post("/mode/{mode}")
+@router.post("/mode/{mode}", include_in_schema=True)
+@router.post("/mode/{mode}/", include_in_schema=False)
 async def set_system_mode(mode: str):
     valid_modes = ["LIVE", "LAB", "REPLAY"]
     if mode.upper() not in valid_modes:
@@ -95,7 +98,8 @@ async def set_system_mode(mode: str):
     settings.SYSTEM_MODE = mode.upper()
     return {"mode": settings.SYSTEM_MODE, "message": f"System operational mode set to {settings.SYSTEM_MODE}"}
 
-@router.post("/attack")
+@router.post("/attack", include_in_schema=True)
+@router.post("/attack/", include_in_schema=False)
 async def trigger_lab_attack(attack_req: LabAttackRequest, db: AsyncSession = Depends(get_db)):
     """
     Safely triggers an event through the exact same processing pipeline in LAB mode.
@@ -176,13 +180,28 @@ async def _run_replay_sequence():
             await event_processor.process_raw_event(item, session)
         await asyncio.sleep(1.5)
 
-@router.post("/replay")
-async def trigger_replay(background_tasks: BackgroundTasks):
+@router.post("/replay", include_in_schema=True)
+@router.post("/replay/", include_in_schema=False)
+async def trigger_replay(background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
     """
     Triggers replaying authentic honeypot attack corpora through the full pipeline.
     """
     settings.SYSTEM_MODE = "REPLAY"
-    background_tasks.add_task(_run_replay_sequence)
+    is_vercel = bool(
+        os.environ.get("VERCEL") or 
+        os.environ.get("VERCEL_ENV") or 
+        os.environ.get("VERCEL_REGION") or 
+        os.environ.get("AWS_LAMBDA_FUNCTION_NAME") or 
+        os.environ.get("NOW_REGION")
+    )
+    if is_vercel:
+        # On Vercel serverless, background tasks get frozen immediately upon response.
+        # Run replay events directly before returning.
+        for item in REPLAY_DATASET:
+            await event_processor.process_raw_event(item, db)
+    else:
+        background_tasks.add_task(_run_replay_sequence)
+
     return {
         "status": "REPLAY_STARTED",
         "message": "Replaying authentic honeypot attack dataset through pipeline",
