@@ -1,8 +1,6 @@
 import asyncio
 import logging
 from typing import Dict, Any, Optional
-from honeypots.ssh_honeypot import SSHHoneypotSensor
-from honeypots.http_honeypot import HTTPHoneypotSensor
 from app.config import settings
 from app.database.session import AsyncSessionLocal
 from app.services.event_processor import event_processor
@@ -11,8 +9,8 @@ logger = logging.getLogger("honeyguard.manager")
 
 class HoneypotManager:
     def __init__(self):
-        self.ssh_sensor: Optional[SSHHoneypotSensor] = None
-        self.http_sensor: Optional[HTTPHoneypotSensor] = None
+        self.ssh_sensor: Optional[Any] = None
+        self.http_sensor: Optional[Any] = None
         self.dynamic_sensors: Dict[str, Any] = {}
         self._is_running = False
 
@@ -27,6 +25,13 @@ class HoneypotManager:
         if self._is_running:
             return
         
+        try:
+            from honeypots.ssh_honeypot import SSHHoneypotSensor
+            from honeypots.http_honeypot import HTTPHoneypotSensor
+        except ImportError as e:
+            logger.warning(f"[HONEYPOT MANAGER] Honeypot sensors could not be imported (serverless environment): {e}")
+            return
+
         self.ssh_sensor = SSHHoneypotSensor(
             host=settings.HONEYPOT_SSH_HOST,
             port=settings.HONEYPOT_SSH_PORT,
@@ -53,6 +58,7 @@ class HoneypotManager:
         """
         try:
             if hp_type.lower() == "ssh":
+                from honeypots.ssh_honeypot import SSHHoneypotSensor
                 sensor = SSHHoneypotSensor(
                     host="0.0.0.0",
                     port=port,
@@ -61,6 +67,7 @@ class HoneypotManager:
                     on_event_callback=self._on_sensor_event
                 )
             elif hp_type.lower() == "http":
+                from honeypots.http_honeypot import HTTPHoneypotSensor
                 sensor = HTTPHoneypotSensor(
                     host="0.0.0.0",
                     port=port,

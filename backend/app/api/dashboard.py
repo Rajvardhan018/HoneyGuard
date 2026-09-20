@@ -11,6 +11,7 @@ from app.schemas.schemas import (
     TopSourceCountry, AttackEventOut, SystemHealthOut
 )
 from app.config import settings
+from app.services.ml_service import ml_service
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
@@ -126,7 +127,7 @@ async def get_system_health(db: AsyncSession = Depends(get_db)):
         status="OPERATIONAL",
         system_mode=settings.SYSTEM_MODE,
         database=db_status,
-        ml_model="ONLINE (RandomForest)",
+        ml_model=f"ONLINE ({ml_service.model_name})",
         threat_intel="CONNECTED",
         soar_engine="READY",
         ssh_honeypot=f"LISTENING :{settings.HONEYPOT_SSH_PORT}",
