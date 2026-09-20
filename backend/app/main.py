@@ -79,6 +79,20 @@ async def log_request_middleware(request: Request, call_next):
     response = await call_next(request)
     return response
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    import traceback
+    err_tb = traceback.format_exc()
+    logger.error(f"Unhandled Exception on {request.method} {request.url.path}: {exc}\n{err_tb}")
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": f"Internal Server Error: {str(exc)}",
+            "error_type": exc.__class__.__name__,
+            "error_message": str(exc)
+        }
+    )
+
 # Mount REST API (both /api/v1 and fallback /v1 in case proxy rewrites strip /api)
 app.include_router(api_router, prefix=settings.API_V1_STR)
 app.include_router(api_router, prefix="/v1")

@@ -41,8 +41,8 @@ export default function AddHoneypotModal({ isOpen, onClose, onCreated }) {
     }
 
     const portNum = parseInt(port, 10);
-    if (isNaN(portNum) || portNum < 1024 || portNum > 65535) {
-      setErrorMsg("Port must be a valid number between 1024 and 65535.");
+    if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
+      setErrorMsg("Port must be a valid number between 1 and 65535.");
       return;
     }
 
@@ -54,7 +54,8 @@ export default function AddHoneypotModal({ isOpen, onClose, onCreated }) {
         port: portNum,
         description: description.trim() || `${deploymentMode} ${type.toUpperCase()} Decoy Sensor`,
         deception_level: deceptionLevel,
-        deployment_mode: deploymentMode
+        deployment_mode: deploymentMode,
+        mode: deploymentMode
       };
 
       const createdHp = await api.createHoneypot(payload);

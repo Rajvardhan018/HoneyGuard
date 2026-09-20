@@ -231,7 +231,7 @@ export default function Dashboard() {
             {/* Center Total Counter */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <span className="text-2xl font-black text-honey-indigo">
-                {stats?.total_attacks ?? 127}
+                {stats?.total_attacks ?? 0}
               </span>
               <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                 Total
@@ -242,19 +242,19 @@ export default function Dashboard() {
           <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs font-medium">
             <div className="flex items-center space-x-2">
               <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
-              <span className="text-slate-600">Critical: <strong>{stats?.severity_distribution.critical || 14}</strong></span>
+              <span className="text-slate-600">Critical: <strong>{stats?.severity_distribution?.critical ?? 0}</strong></span>
             </div>
             <div className="flex items-center space-x-2">
               <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-              <span className="text-slate-600">High: <strong>{stats?.severity_distribution.high || 32}</strong></span>
+              <span className="text-slate-600">High: <strong>{stats?.severity_distribution?.high ?? 0}</strong></span>
             </div>
             <div className="flex items-center space-x-2">
               <span className="w-2.5 h-2.5 rounded-full bg-purple-500" />
-              <span className="text-slate-600">Medium: <strong>{stats?.severity_distribution.medium || 56}</strong></span>
+              <span className="text-slate-600">Medium: <strong>{stats?.severity_distribution?.medium ?? 0}</strong></span>
             </div>
             <div className="flex items-center space-x-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              <span className="text-slate-600">Low: <strong>{stats?.severity_distribution.low || 25}</strong></span>
+              <span className="text-slate-600">Low: <strong>{stats?.severity_distribution?.low ?? 0}</strong></span>
             </div>
           </div>
         </GlassCard>
@@ -329,7 +329,7 @@ export default function Dashboard() {
               <p className="text-xs text-slate-400">Live ballistic attack origins</p>
             </div>
             <span className="text-[11px] font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
-              17 active
+              {stats?.total_attacks ?? 0} total
             </span>
           </div>
 

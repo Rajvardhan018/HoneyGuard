@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
@@ -40,10 +40,20 @@ class HoneypotOut(BaseModel):
 class HoneypotCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=128)
     type: str = Field(..., pattern="^(?i)(ssh|http)$")
-    port: int = Field(..., ge=1024, le=65535)
+    port: int = Field(..., ge=1, le=65535)
     description: Optional[str] = Field(None, max_length=256)
     deception_level: str = Field("LOW", pattern="^(?i)(LOW|MEDIUM|HIGH|CRITICAL)$")
     deployment_mode: str = Field("LAB", pattern="^(?i)(LAB|LIVE)$")
+    mode: Optional[str] = Field(None, pattern="^(?i)(LAB|LIVE)$")
+
+    @model_validator(mode="before")
+    @classmethod
+    def reconcile_mode(cls, data: Any):
+        if isinstance(data, dict):
+            m = data.get("mode") or data.get("deployment_mode") or "LAB"
+            data["deployment_mode"] = m
+            data["mode"] = m
+        return data
 
 class HoneypotActionRequest(BaseModel):
     action: str  # start, stop, restart, set_deception

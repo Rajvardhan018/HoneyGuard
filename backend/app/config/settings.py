@@ -11,7 +11,13 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./honeyguard.db")
+    DATABASE_URL: str = (
+        os.getenv("DATABASE_URL") or 
+        os.getenv("POSTGRES_URL") or 
+        os.getenv("DIRECT_URL") or 
+        "sqlite+aiosqlite:///./honeyguard.db"
+    )
+    DIRECT_URL: str = os.getenv("DIRECT_URL", "")
     
     SECRET_KEY: str = os.getenv("SECRET_KEY", "honeyguard_super_secure_jwt_secret_key_2026_purple_glass_production")
     ALGORITHM: str = "HS256"

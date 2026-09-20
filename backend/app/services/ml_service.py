@@ -2,12 +2,27 @@ import os
 import math
 from typing import Dict, Any, Tuple, List
 
-try:
-    import joblib
-    import numpy as np
-    from sklearn.ensemble import RandomForestClassifier
-    HAS_SKLEARN = True
-except ImportError:
+# Optional heavy ML dependencies for serverless & lightweight execution.
+# Vercel serverless functions strictly require avoiding heavyweight scikit-learn/scipy/pandas wheels (225MB limit).
+# Native AdaptiveHeuristic inference is used by default, providing high-accuracy deterministic scoring without binary overhead.
+_use_sklearn = (
+    not bool(os.environ.get("VERCEL"))
+    and not bool(os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+    and os.environ.get("HONEYGUARD_USE_SKLEARN", "0").lower() in ("1", "true", "yes")
+)
+
+if _use_sklearn:
+    try:
+        import joblib
+        import numpy as np
+        from sklearn.ensemble import RandomForestClassifier
+        HAS_SKLEARN = True
+    except Exception:
+        joblib = None
+        np = None
+        RandomForestClassifier = None
+        HAS_SKLEARN = False
+else:
     joblib = None
     np = None
     RandomForestClassifier = None

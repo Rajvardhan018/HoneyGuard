@@ -37,6 +37,18 @@ class VercelPathFixMiddleware:
                     forwarded_uri = headers.get(b"x-forwarded-uri", b"").decode("utf-8")
                     if forwarded_uri and forwarded_uri.startswith("/api"):
                         scope["path"] = forwarded_uri.split("?")[0]
+
+            # Trigger lazy database initialization for serverless environments
+            try:
+                from app.database.session import init_db, AsyncSessionLocal
+                await init_db()
+                from app.database.seed import seed_database
+                async with AsyncSessionLocal() as session:
+                    await seed_database(session)
+            except Exception as db_init_err:
+                import logging
+                logging.getLogger("honeyguard.vercel").warning(f"Vercel DB initialization: {db_init_err}")
+
         await self.asgi_app(scope, receive, send)
 
 app = VercelPathFixMiddleware(fastapi_app)
